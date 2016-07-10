@@ -1,5 +1,8 @@
 # wechat-group-stat
 
+wechat-group-stat is a rails app of collecting the workout records in the wechat group "完美身材Club".
+The service logic is in the `lib/tasks/import.rake`. Using the rails is for easy to store and query the records in sqlite database. 
+
 
 ## usage
 
