@@ -1,0 +1,13 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  wxid: MyString
+  name: MyString
+  nick: MyString
+  status: MyString
+
+two:
+  wxid: MyString
+  name: MyString
+  nick: MyString
+  status: MyString
