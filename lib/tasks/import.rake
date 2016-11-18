@@ -36,13 +36,14 @@ task :import, [:filename] => :environment do
       end   
     end
 
-
+    newRecord=false
     db.execute("SELECT msgId,msgSvrId, createTime,talker,content FROM message where talker='3783139122@chatroom'").each do |row|
       msgId,msgSvrId, time,talker,content = row.values_at 'msgId','msgSvrId','createTime','talker','content'
       next unless content
      # next if(Time.now - Time.at(time/1000) > 60*60*24*14 )   
       next if content =~ /关键字/       #skip. 这个消息是群主发通告。打卡不应该包含“关键字”。
-      next if content =~ /微信红包/       #skip.     
+      next if content =~ /微信红包/       #skip.
+      next if content =~ /建议/          #skip.
       next if content =~ /^~SEMI_XML~/  
       if content.match('#打卡')
         id=content.scan(/^(.+?):\n/)[0]? content.scan(/^(.+?):\n/)[0][0]:"chenxing_2489"         # if the id is empty then it is me
@@ -54,31 +55,39 @@ task :import, [:filename] => :environment do
           puts "#{time} #content"
           workout=Workout.new(msgSvrId: msgSvrId, wxid: id, name: name, time: Time.at(time/1000).strftime('%F %R'),detail: content ) 
           workout.save
-          puts workout
+          puts "#{workout.time} #{workout.name} #{workout.detail}"
+          newRecord=true
         end        
 
       end
+    end
+    if newRecord
+      exit 0
+    else
+      exit 100
     end
   rescue => exception
     puts exception.backtrace
     raise # always reraise
   end
+  
 end
 
 
 desc "Generate the html"
 task :export, [:filename] => :environment do
 
+  period=14 
   output =  "# Notice \n\n"
   output <<  "* 打卡请包含关键字 *#打卡*. 在群里面打卡的例子: *#打卡 跑步10公里*  \n"
-  output <<  "* 统计周期为28天 \n"
+  output <<  "* 统计周期为#{period}天 \n"
   output <<  "\n"
   
-  output <<  "# Activities statistics of Last 28 days (Updated on #{Time.now})  \n\n"
+  output <<  "# Activities statistics of Last #{period} days (Updated on #{Time.now})  \n\n"
   output <<  "| Name |Times| \n"
 
   activity_stat=Member.all.inject({}) do |all, member|
-         all[member]=Workout.where(wxid: member.wxid, time: (Time.now-60*60*24*28)..(Time.now+24*3600)).size
+         all[member]=Workout.where(wxid: member.wxid, time: (Time.now-60*60*24 * period)..(Time.now+24*3600)).size
          all
        end
   activity_stat.sort_by{|k,v| v}.reverse.each do |record|    
@@ -100,7 +109,7 @@ task :export, [:filename] => :environment do
       name=record[0].nick
     end
     output <<  "## [#{name}](history/#{member.wxid}.html) \n\n"
-    Workout.where(wxid: member.wxid, time: (Time.now-60*60*24*28)..(Time.now+24*3600)).each do |workout| 
+    Workout.where(wxid: member.wxid, time: (Time.now-60*60*24*period)..(Time.now+24*3600)).each do |workout| 
       output <<  " #{workout.time} #{workout.detail} \n\n"
     end
   end
