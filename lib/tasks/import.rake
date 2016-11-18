@@ -33,7 +33,15 @@ task :import, [:filename] => :environment do
         member=Member.where(wxid: wxid).first_or_create 
         member.name=name
         member.save      
-      end   
+      end
+      currentMembers=memberlist.split(/;/)
+      Member.all.each do |member|
+        unless currentMembers.include?(member.wxid)
+          puts "destroy:#{member.name} #{member.wxid}"
+          member.destroy          
+        end
+      end
+      
     end
 
     newRecord=false
@@ -87,9 +95,11 @@ task :export, [:filename] => :environment do
   output <<  "| Name |Times| \n"
 
   activity_stat=Member.all.inject({}) do |all, member|
-         all[member]=Workout.where(wxid: member.wxid, time: (Time.now-60*60*24 * period)..(Time.now+24*3600)).size
-         all
-       end
+    all[member]=Workout.where(wxid: member.wxid, time: (Time.now-60*60*24 * period)..(Time.now+24*3600)).select do |wk|
+       wk.time.to_i > 1479427202 #2016/11/18                                                                                                                             
+    end.size    
+    all
+  end
   activity_stat.sort_by{|k,v| v}.reverse.each do |record|    
     
     name=record[0].name
@@ -109,7 +119,7 @@ task :export, [:filename] => :environment do
       name=record[0].nick
     end
     output <<  "## [#{name}](history/#{member.wxid}.html) \n\n"
-    Workout.where(wxid: member.wxid, time: (Time.now-60*60*24*period)..(Time.now+24*3600)).each do |workout| 
+    Workout.where(wxid: member.wxid, time: (Time.now-60*60*24*period)..(Time.now+24*3600)).select{|wk| wk.time.to_i > 1479427202 }.each do |workout| 
       output <<  " #{workout.time} #{workout.detail} \n\n"
     end
   end
