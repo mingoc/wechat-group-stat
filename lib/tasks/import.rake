@@ -53,7 +53,7 @@ task :import, [:filename] => :environment do
       next if content =~ /微信红包/       #skip.
       next if content =~ /建议/          #skip.
       next if content =~ /^~SEMI_XML~/  
-      if content.match('#打卡')
+      if content.match('#打卡') or content.match('＃打卡') 
         id=content.scan(/^(.+?):\n/)[0]? content.scan(/^(.+?):\n/)[0][0]:"chenxing_2489"         # if the id is empty then it is me
         name = talker2name.fetch talker, talker
         
